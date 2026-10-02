@@ -37,7 +37,7 @@ public final class MavenValidator implements Validator {
                 return Result.fail("mvn " + goal + " timed out after " + timeoutMinutes + " min");
             }
             if (p.exitValue() == 0) return Result.pass("mvn " + goal + " succeeded (log: " + log.getFileName() + ")");
-            List<String> lines = Files.readAllLines(log);
+            List<String> lines = Files.readAllLines(log, java.nio.charset.StandardCharsets.ISO_8859_1); // console encoding is unknown
             String tail = String.join(" | ", lines.subList(Math.max(0, lines.size() - 12), lines.size()));
             return Result.fail("mvn " + goal + " failed: " + tail);
         } catch (IOException e) {

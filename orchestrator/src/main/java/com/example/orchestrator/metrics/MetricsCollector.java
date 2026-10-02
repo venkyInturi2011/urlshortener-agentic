@@ -7,7 +7,7 @@ public final class MetricsCollector {
     private long runStart = System.currentTimeMillis();
     private long runEnd;
     private int attempts, failedAttempts, retries, fallbacks, rollbacks, policyBlocks, approvalsRequested,
-            approvalsDenied, replans, nodesDone, nodesTotal, firstTryDone;
+            approvalsDenied, replans, nodesDone, nodesDoneFinal, nodesTotal, firstTryDone;
     private long approvalWaitMs;
     private final Map<String, Long> firstFailureAt = new HashMap<>();
     private final List<Long> recoveryMs = new ArrayList<>();
@@ -47,17 +47,19 @@ public final class MetricsCollector {
         if (f != null) recoveryMs.add(System.currentTimeMillis() - f);
     }
 
-    public synchronized void finish(int totalNodes) {
+    public synchronized void finish(int totalNodes, int doneNodes) {
         runEnd = System.currentTimeMillis();
         nodesTotal = totalNodes;
+        nodesDoneFinal = doneNodes;
     }
 
     public synchronized Map<String, Object> snapshot() {
         Map<String, Object> m = new LinkedHashMap<>();
         long end = runEnd == 0 ? System.currentTimeMillis() : runEnd;
         m.put("nodes_total", nodesTotal);
-        m.put("nodes_done", nodesDone);
-        m.put("node_success_rate", nodesTotal == 0 ? 0.0 : round((double) Math.min(nodesDone, nodesTotal) / nodesTotal));
+        m.put("nodes_done", nodesDoneFinal);
+        m.put("node_executions_completed", nodesDone);
+        m.put("node_success_rate", nodesTotal == 0 ? 0.0 : round((double) nodesDoneFinal / nodesTotal));
         m.put("first_attempt_success_rate", nodesDone == 0 ? 0.0 : round((double) firstTryDone / nodesDone));
         m.put("attempts", attempts);
         m.put("failed_attempts", failedAttempts);

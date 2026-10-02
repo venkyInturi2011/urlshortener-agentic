@@ -39,13 +39,16 @@ public final class RequirementsAnalyzer {
             new Feature("BUGFIX_ALIAS_CASE", Pattern.compile("(bug|fix).*(case|reserved)|(case|reserved).*(bug|fix)"),
                     "Alias case-sensitivity fix", "Reserved-word check is case-insensitive; aliases differing only by case are rejected"));
 
-    private record Vague(String id, Pattern pattern, String term, String question, String assumption) {}
+    /** {@code unless}: if the text already states a concrete answer (e.g. names SSRF), the term is not ambiguous. */
+    private record Vague(String id, Pattern pattern, Pattern unless, String term, String question, String assumption) {}
 
     private static final List<Vague> VAGUE = List.of(
-            new Vague("safer", Pattern.compile("\\bsafe(r|ty)?\\b|\\bsecur(e|er|ity)\\b"), "safer",
+            new Vague("safer", Pattern.compile("\\bsafe(r|ty)?\\b|\\bsecur(e|er|ity)\\b"),
+                    Pattern.compile("ssrf|threat model"), "safer",
                     "What threat model does 'safer' cover: malicious destinations, abuse/spam of the API, SSRF, or data protection? Any scheme restrictions (HTTPS only)?",
                     "Block known-bad destination domains (denylist) and keep http/https; rate limiting stays on"),
-            new Vague("faster", Pattern.compile("\\bfast(er)?\\b|\\bquick(er)?\\b|\\bperformance\\b|\\bspeed\\b"), "faster",
+            new Vague("faster", Pattern.compile("\\bfast(er)?\\b|\\bquick(er)?\\b|\\bperformance\\b|\\bspeed\\b"),
+                    Pattern.compile("p95|\\d+\\s*ms\\b"), "faster",
                     "What is the target (p95 redirect latency, requests per second) and the acceptable staleness for cached links?",
                     "Add an in-memory redirect cache (TTL 60 s) targeting p95 < 50 ms"));
 
@@ -63,7 +66,7 @@ public final class RequirementsAnalyzer {
         }
         List<Map<String, Object>> amb = new ArrayList<>();
         for (Vague v : VAGUE) {
-            if (v.pattern().matcher(t).find()) {
+            if (v.pattern().matcher(t).find() && !v.unless().matcher(t).find()) {
                 amb.add(map("id", "AMB-" + (amb.size() + 1), "key", v.id(), "term", v.term(), "question", v.question(),
                         "assumption", v.assumption(), "status", "OPEN", "answer", null));
             }

@@ -1,0 +1,187 @@
+{
+  "decisions" : [ {
+    "type" : "approval-granted",
+    "node" : "design_review",
+    "actor" : "auto-approver",
+    "text" : "Approve architecture, API contract and risk register before implementation starts",
+    "ts" : 1790975980029
+  }, {
+    "type" : "approval-granted",
+    "node" : "release_readiness",
+    "actor" : "auto-approver",
+    "text" : "Release approval - human owns the go/no-go decision",
+    "ts" : 1790976002578
+  } ],
+  "executions" : [ {
+    "node" : "requirements",
+    "run" : 1,
+    "agent" : "requirements",
+    "fallback" : false,
+    "consumed" : { },
+    "produced" : {
+      "req.functional" : "v1",
+      "req.security" : "v1",
+      "req.performance" : "v1",
+      "req.ambiguities" : "v1"
+    },
+    "files" : 0
+  }, {
+    "node" : "risk_analysis",
+    "run" : 1,
+    "agent" : "risk",
+    "fallback" : false,
+    "consumed" : {
+      "req.functional" : 1,
+      "req.ambiguities" : 1
+    },
+    "produced" : {
+      "design.risks" : "v1"
+    },
+    "files" : 1
+  }, {
+    "node" : "architecture",
+    "run" : 1,
+    "agent" : "architect",
+    "fallback" : false,
+    "consumed" : {
+      "req.functional" : 1,
+      "req.security" : 1,
+      "req.performance" : 1
+    },
+    "produced" : {
+      "design.architecture" : "v1",
+      "design.openapi" : "v1"
+    },
+    "files" : 2
+  }, {
+    "node" : "design_review",
+    "run" : 1,
+    "agent" : "reviewer",
+    "fallback" : false,
+    "consumed" : {
+      "design.architecture" : 1,
+      "design.openapi" : 1,
+      "design.risks" : 1,
+      "req.ambiguities" : 1
+    },
+    "produced" : {
+      "review.design" : "v1"
+    },
+    "files" : 0
+  }, {
+    "node" : "impl_analytics",
+    "run" : 1,
+    "agent" : "implementer",
+    "fallback" : false,
+    "consumed" : {
+      "design.openapi" : 1
+    },
+    "produced" : {
+      "code.analytics" : "v1"
+    },
+    "files" : 1
+  }, {
+    "node" : "impl_storage",
+    "run" : 1,
+    "agent" : "implementer",
+    "fallback" : false,
+    "consumed" : {
+      "design.openapi" : 1
+    },
+    "produced" : {
+      "code.storage" : "v1"
+    },
+    "files" : 6
+  }, {
+    "node" : "impl_api",
+    "run" : 1,
+    "agent" : "implementer",
+    "fallback" : false,
+    "consumed" : {
+      "design.openapi" : 1
+    },
+    "produced" : {
+      "code.api" : "v1"
+    },
+    "files" : 12
+  }, {
+    "node" : "integrate",
+    "run" : 1,
+    "agent" : "implementer",
+    "fallback" : false,
+    "consumed" : {
+      "code.storage" : 1,
+      "code.api" : 1,
+      "code.analytics" : 1
+    },
+    "produced" : {
+      "code.integrate" : "v1"
+    },
+    "files" : 5
+  }, {
+    "node" : "write_integration_tests",
+    "run" : 1,
+    "agent" : "tester",
+    "fallback" : false,
+    "consumed" : {
+      "code.integrate" : 1
+    },
+    "produced" : {
+      "tests.integration" : "v1"
+    },
+    "files" : 3
+  }, {
+    "node" : "write_unit_tests",
+    "run" : 1,
+    "agent" : "tester",
+    "fallback" : false,
+    "consumed" : {
+      "code.integrate" : 1
+    },
+    "produced" : {
+      "tests.unit" : "v1"
+    },
+    "files" : 4
+  }, {
+    "node" : "verify",
+    "run" : 1,
+    "agent" : "reviewer",
+    "fallback" : false,
+    "consumed" : {
+      "tests.unit" : 1,
+      "tests.integration" : 1
+    },
+    "produced" : {
+      "verify.report" : "v1"
+    },
+    "files" : 0
+  }, {
+    "node" : "docs",
+    "run" : 1,
+    "agent" : "documenter",
+    "fallback" : false,
+    "consumed" : {
+      "design.openapi" : 1,
+      "req.functional" : 1,
+      "verify.report" : 1
+    },
+    "produced" : {
+      "docs.readme" : "v1"
+    },
+    "files" : 2
+  }, {
+    "node" : "release_readiness",
+    "run" : 1,
+    "agent" : "release-manager",
+    "fallback" : false,
+    "consumed" : {
+      "verify.report" : 1,
+      "docs.readme" : 1
+    },
+    "produced" : {
+      "release.readiness" : "v1",
+      "release.report" : "v1"
+    },
+    "files" : 1
+  } ]
+}

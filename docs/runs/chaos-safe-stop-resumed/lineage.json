@@ -1,0 +1,93 @@
+{
+  "executions" : [ {
+    "node" : "impl_persistence",
+    "run" : 1,
+    "agent" : "implementer",
+    "fallback" : false,
+    "consumed" : {
+      "impact.summary" : 1
+    },
+    "produced" : {
+      "code.persistence" : "v1"
+    },
+    "files" : 6
+  }, {
+    "node" : "impl_service_logic",
+    "run" : 1,
+    "agent" : "implementer",
+    "fallback" : false,
+    "consumed" : {
+      "code.persistence" : 1,
+      "code.api_contract" : 1
+    },
+    "produced" : {
+      "code.service" : "v1"
+    },
+    "files" : 3
+  }, {
+    "node" : "update_tests",
+    "run" : 1,
+    "agent" : "tester",
+    "fallback" : false,
+    "consumed" : {
+      "code.service" : 1
+    },
+    "produced" : {
+      "tests.updated" : "v1"
+    },
+    "files" : 4
+  }, {
+    "node" : "verify",
+    "run" : 1,
+    "agent" : "reviewer",
+    "fallback" : false,
+    "consumed" : {
+      "tests.updated" : 1
+    },
+    "produced" : {
+      "verify.report" : "v1"
+    },
+    "files" : 0
+  }, {
+    "node" : "docs",
+    "run" : 1,
+    "agent" : "documenter",
+    "fallback" : false,
+    "consumed" : {
+      "design.openapi" : 1,
+      "req.functional" : 1,
+      "verify.report" : 1
+    },
+    "produced" : {
+      "docs.readme" : "v1"
+    },
+    "files" : 2
+  }, {
+    "node" : "release_readiness",
+    "run" : 1,
+    "agent" : "release-manager",
+    "fallback" : false,
+    "consumed" : {
+      "verify.report" : 1,
+      "docs.readme" : 1
+    },
+    "produced" : {
+      "release.readiness" : "v1",
+      "release.report" : "v1"
+    },
+    "files" : 1
+  } ],
+  "decisions" : [ {
+    "type" : "approval-granted",
+    "node" : "impl_persistence",
+    "actor" : "auto-approver",
+    "text" : "high-impact changes: [schema migration]",
+    "ts" : 1790976074336
+  }, {
+    "type" : "approval-granted",
+    "node" : "release_readiness",
+    "actor" : "auto-approver",
+    "text" : "Release approval - human owns the go/no-go decision",
+    "ts" : 1790976096112
+  } ]
+}

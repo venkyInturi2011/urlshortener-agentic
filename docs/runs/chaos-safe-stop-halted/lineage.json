@@ -1,0 +1,103 @@
+{
+  "executions" : [ {
+    "node" : "requirements",
+    "run" : 1,
+    "agent" : "requirements",
+    "fallback" : false,
+    "consumed" : { },
+    "produced" : {
+      "req.functional" : "v1",
+      "req.security" : "v1",
+      "req.performance" : "v1",
+      "req.ambiguities" : "v1"
+    },
+    "files" : 0
+  }, {
+    "node" : "risk_analysis",
+    "run" : 1,
+    "agent" : "risk",
+    "fallback" : false,
+    "consumed" : {
+      "req.functional" : 1,
+      "req.ambiguities" : 1
+    },
+    "produced" : {
+      "design.risks" : "v1"
+    },
+    "files" : 1
+  }, {
+    "node" : "architecture",
+    "run" : 1,
+    "agent" : "architect",
+    "fallback" : false,
+    "consumed" : {
+      "req.functional" : 1,
+      "req.security" : 1,
+      "req.performance" : 1
+    },
+    "produced" : {
+      "design.architecture" : "v1",
+      "design.openapi" : "v1"
+    },
+    "files" : 2
+  }, {
+    "node" : "impact_analysis",
+    "run" : 1,
+    "agent" : "impact-analyst",
+    "fallback" : false,
+    "consumed" : {
+      "req.functional" : 1
+    },
+    "produced" : {
+      "impact.report" : "v1",
+      "impact.summary" : "v1"
+    },
+    "files" : 1
+  }, {
+    "node" : "design_review",
+    "run" : 1,
+    "agent" : "reviewer",
+    "fallback" : false,
+    "consumed" : {
+      "impact.report" : 1,
+      "impact.summary" : 1,
+      "design.openapi" : 1,
+      "design.risks" : 1
+    },
+    "produced" : {
+      "review.design" : "v1"
+    },
+    "files" : 0
+  }, {
+    "node" : "impl_api_contract",
+    "run" : 1,
+    "agent" : "implementer",
+    "fallback" : false,
+    "consumed" : {
+      "impact.summary" : 1
+    },
+    "produced" : {
+      "code.api_contract" : "v1"
+    },
+    "files" : 4
+  } ],
+  "decisions" : [ {
+    "type" : "approval-granted",
+    "node" : "design_review",
+    "actor" : "auto-approver",
+    "text" : "Approve additive API contract change (expiresAt, clicksByDay) and schema migration",
+    "ts" : 1790976073087
+  }, {
+    "type" : "approval-granted",
+    "node" : "impl_api_contract",
+    "actor" : "auto-approver",
+    "text" : "high-impact changes: [public API contract change]",
+    "ts" : 1790976073119
+  }, {
+    "type" : "safe-stop",
+    "node" : null,
+    "actor" : "orchestrator",
+    "text" : "node impl_persistence failed: InjectedFault: injected exception in impl_persistence",
+    "ts" : 1790976073426
+  } ]
+}

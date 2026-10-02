@@ -1,0 +1,29 @@
+{
+  "nodes_total" : 12,
+  "nodes_done" : 6,
+  "node_executions_completed" : 6,
+  "node_success_rate" : 0.5,
+  "first_attempt_success_rate" : 1.0,
+  "attempts" : 10,
+  "failed_attempts" : 4,
+  "retries" : 2,
+  "fallbacks" : 1,
+  "rollbacks" : 0,
+  "policy_blocks" : 0,
+  "approvals_requested" : 2,
+  "approvals_denied" : 0,
+  "approval_wait_ms" : 0,
+  "replans" : 0,
+  "mttr_ms" : null,
+  "recovered_incidents" : 0,
+  "unrecovered_incidents" : 1,
+  "e2e_latency_ms" : 525,
+  "node_latency_ms" : {
+    "requirements" : 32,
+    "risk_analysis" : 28,
+    "architecture" : 74,
+    "impact_analysis" : 100,
+    "design_review" : 7,
+    "impl_api_contract" : 45
+  }
+}

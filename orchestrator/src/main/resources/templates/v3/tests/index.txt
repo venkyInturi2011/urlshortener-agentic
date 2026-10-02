@@ -1,0 +1,4 @@
+src/test/java/com/example/shortener/service/UrlValidatorTest.java.tpl
+src/test/java/com/example/shortener/service/DenylistValidatorTest.java.tpl
+src/test/java/com/example/shortener/service/RedirectCacheTest.java.tpl
+src/test/java/com/example/shortener/service/UrlServiceCacheTest.java.tpl

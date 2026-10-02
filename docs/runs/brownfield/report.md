@@ -1,0 +1,130 @@
+# Run report: brownfield
+
+**Status:** COMPLETED
+
+> Add link expiry (optional expiresAt on create, redirect returns 410 after expiry) and per-day click analytics on the stats endpoint. Fix bug: the reserved-word check for custom aliases can be bypassed by changing the case, and aliases that differ only by case are accepted.
+
+**Audit chain:** VALID - 94 records, chain intact
+
+## Workflow graph
+
+```mermaid
+flowchart TD
+  requirements["requirements"]
+  impact_analysis["impact_analysis"]
+  architecture["architecture"]
+  risk_analysis["risk_analysis"]
+  design_review["design_review<br/>HUMAN GATE"]
+  impl_persistence["impl_persistence"]
+  impl_api_contract["impl_api_contract"]
+  impl_service_logic["impl_service_logic"]
+  update_tests["update_tests"]
+  verify["verify"]
+  docs["docs"]
+  release_readiness["release_readiness<br/>HUMAN GATE"]
+  requirements --> impact_analysis
+  requirements --> architecture
+  requirements --> risk_analysis
+  impact_analysis --> design_review
+  architecture --> design_review
+  risk_analysis --> design_review
+  design_review --> impl_persistence
+  design_review --> impl_api_contract
+  impl_persistence --> impl_service_logic
+  impl_api_contract --> impl_service_logic
+  impl_service_logic --> update_tests
+  update_tests --> verify
+  verify --> docs
+  docs --> release_readiness
+```
+
+Parallel layers: [[requirements], [impact_analysis, architecture, risk_analysis], [design_review], [impl_persistence, impl_api_contract], [impl_service_logic], [update_tests], [verify], [docs], [release_readiness]]  
+Join (sync) nodes: [design_review, impl_service_logic]
+
+## Nodes
+
+| Node | Agent | Status | Attempts | Fallback | Rollbacks | Runs |
+|---|---|---|---|---|---|---|
+| requirements | requirements | DONE | 1 | false | 0 | 1 |
+| impact_analysis | impact-analyst | DONE | 1 | false | 0 | 1 |
+| architecture | architect | DONE | 1 | false | 0 | 1 |
+| risk_analysis | risk | DONE | 1 | false | 0 | 1 |
+| design_review (gate) | reviewer | DONE | 1 | false | 0 | 1 |
+| impl_persistence | implementer | DONE | 1 | false | 0 | 1 |
+| impl_api_contract | implementer | DONE | 1 | false | 0 | 1 |
+| impl_service_logic | implementer | DONE | 1 | false | 0 | 1 |
+| update_tests | tester | DONE | 1 | false | 0 | 1 |
+| verify | reviewer | DONE | 1 | false | 0 | 1 |
+| docs | documenter | DONE | 1 | false | 0 | 1 |
+| release_readiness (gate) | release-manager | DONE | 1 | false | 0 | 1 |
+
+## Reliability metrics
+
+| Metric | Value |
+|---|---|
+| nodes_total | 12 |
+| nodes_done | 12 |
+| node_executions_completed | 12 |
+| node_success_rate | 1.0 |
+| first_attempt_success_rate | 1.0 |
+| attempts | 12 |
+| failed_attempts | 0 |
+| retries | 0 |
+| fallbacks | 0 |
+| rollbacks | 0 |
+| policy_blocks | 0 |
+| approvals_requested | 4 |
+| approvals_denied | 0 |
+| approval_wait_ms | 1 |
+| replans | 0 |
+| mttr_ms | null |
+| recovered_incidents | 0 |
+| unrecovered_incidents | 0 |
+| e2e_latency_ms | 21458 |
+
+## Decisions
+
+- **approval-granted** [design_review] by auto-approver: Approve additive API contract change (expiresAt, clicksByDay) and schema migration
+- **approval-granted** [impl_api_contract] by auto-approver: high-impact changes: [public API contract change]
+- **approval-granted** [impl_persistence] by auto-approver: high-impact changes: [schema migration]
+- **approval-granted** [release_readiness] by auto-approver: Release approval - human owns the go/no-go decision
+
+## Decision lineage (inputs to outputs)
+
+| Node | Run | Agent | Consumed | Produced |
+|---|---|---|---|---|
+| requirements | 1 | requirements | {} | {req.functional=v1, req.security=v1, req.performance=v1, req.ambiguities=v1} |
+| risk_analysis | 1 | risk | {req.functional=1, req.ambiguities=1} | {design.risks=v1} |
+| architecture | 1 | architect | {req.functional=1, req.security=1, req.performance=1} | {design.architecture=v1, design.openapi=v1} |
+| impact_analysis | 1 | impact-analyst | {req.functional=1} | {impact.report=v1, impact.summary=v1} |
+| design_review | 1 | reviewer | {impact.report=1, impact.summary=1, design.openapi=1, design.risks=1} | {review.design=v1} |
+| impl_api_contract | 1 | implementer | {impact.summary=1} | {code.api_contract=v1} |
+| impl_persistence | 1 | implementer | {impact.summary=1} | {code.persistence=v1} |
+| impl_service_logic | 1 | implementer | {code.persistence=1, code.api_contract=1} | {code.service=v1} |
+| update_tests | 1 | tester | {code.service=1} | {tests.updated=v1} |
+| verify | 1 | reviewer | {tests.updated=1} | {verify.report=v1} |
+| docs | 1 | documenter | {design.openapi=1, req.functional=1, verify.report=1} | {docs.readme=v1} |
+| release_readiness | 1 | release-manager | {verify.report=1, docs.readme=1} | {release.readiness=v1, release.report=v1} |
+
+## Artifact versions
+
+| Artifact | Version | Produced by | SHA-256 |
+|---|---|---|---|
+| req.functional | v1 | requirements | eca8f88ad98a |
+| req.security | v1 | requirements | e6a2a98ba81f |
+| req.performance | v1 | requirements | f461ced770e3 |
+| req.ambiguities | v1 | requirements | 27f34907456f |
+| design.risks | v1 | risk_analysis | 8b1acb740e24 |
+| design.architecture | v1 | architecture | 30c33610d1d0 |
+| design.openapi | v1 | architecture | af138874959b |
+| impact.report | v1 | impact_analysis | eeeb5812d0a5 |
+| impact.summary | v1 | impact_analysis | eae16f291823 |
+| review.design | v1 | design_review | d8d42870a526 |
+| code.api_contract | v1 | impl_api_contract | bb4549ddcf3b |
+| code.persistence | v1 | impl_persistence | c6f001975116 |
+| code.service | v1 | impl_service_logic | a17e9835cfd5 |
+| tests.updated | v1 | update_tests | 539f36faae16 |
+| verify.report | v1 | verify | a93a74220ab5 |
+| docs.readme | v1 | docs | b7ec010addcd |
+| release.readiness | v1 | release_readiness | 80a9e97c9903 |
+| release.report | v1 | release_readiness | 910d1379984b |

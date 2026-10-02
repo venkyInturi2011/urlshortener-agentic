@@ -17,7 +17,8 @@ public final class ChangeClassifier {
         if (c.kind() == ChangeKind.MODIFY) {
             if (p.equals("pom.xml")) return RiskTier.HIGH;
             if (p.endsWith(".sql")) return RiskTier.HIGH;
-            if (p.contains("/dto/") || p.contains("/api/")) return RiskTier.HIGH;
+            boolean production = p.contains("src/main/");
+            if (production && (p.contains("/dto/") || p.contains("/api/"))) return RiskTier.HIGH;
         }
         return RiskTier.LOW;
     }

@@ -1,0 +1,4 @@
+src/main/java/com/example/shortener/dto/CreateUrlRequest.java.tpl
+src/main/java/com/example/shortener/dto/UrlResponse.java.tpl
+src/main/java/com/example/shortener/dto/StatsResponse.java.tpl
+src/main/java/com/example/shortener/api/UrlController.java.tpl

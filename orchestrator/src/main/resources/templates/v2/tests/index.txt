@@ -1,0 +1,4 @@
+src/test/java/com/example/shortener/service/UrlServiceTest.java.tpl
+src/test/java/com/example/shortener/service/UrlValidatorTest.java.tpl
+src/test/java/com/example/shortener/api/UrlApiIntegrationTest.java.tpl
+src/test/java/com/example/shortener/service/AliasRaceTest.java.tpl

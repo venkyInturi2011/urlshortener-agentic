@@ -1,0 +1,186 @@
+{
+  "decisions" : [ {
+    "type" : "approval-granted",
+    "node" : "design_review",
+    "actor" : "auto-approver",
+    "text" : "Approve additive API contract change (expiresAt, clicksByDay) and schema migration",
+    "ts" : 1790976050053
+  }, {
+    "type" : "approval-granted",
+    "node" : "impl_api_contract",
+    "actor" : "auto-approver",
+    "text" : "high-impact changes: [public API contract change]",
+    "ts" : 1790976050095
+  }, {
+    "type" : "approval-granted",
+    "node" : "impl_persistence",
+    "actor" : "auto-approver",
+    "text" : "high-impact changes: [schema migration]",
+    "ts" : 1790976050095
+  }, {
+    "type" : "approval-granted",
+    "node" : "release_readiness",
+    "actor" : "auto-approver",
+    "text" : "Release approval - human owns the go/no-go decision",
+    "ts" : 1790976071939
+  } ],
+  "executions" : [ {
+    "node" : "requirements",
+    "run" : 1,
+    "agent" : "requirements",
+    "fallback" : false,
+    "consumed" : { },
+    "produced" : {
+      "req.functional" : "v1",
+      "req.security" : "v1",
+      "req.performance" : "v1",
+      "req.ambiguities" : "v1"
+    },
+    "files" : 0
+  }, {
+    "node" : "risk_analysis",
+    "run" : 1,
+    "agent" : "risk",
+    "fallback" : false,
+    "consumed" : {
+      "req.functional" : 1,
+      "req.ambiguities" : 1
+    },
+    "produced" : {
+      "design.risks" : "v1"
+    },
+    "files" : 1
+  }, {
+    "node" : "architecture",
+    "run" : 1,
+    "agent" : "architect",
+    "fallback" : false,
+    "consumed" : {
+      "req.functional" : 1,
+      "req.security" : 1,
+      "req.performance" : 1
+    },
+    "produced" : {
+      "design.architecture" : "v1",
+      "design.openapi" : "v1"
+    },
+    "files" : 2
+  }, {
+    "node" : "impact_analysis",
+    "run" : 1,
+    "agent" : "impact-analyst",
+    "fallback" : false,
+    "consumed" : {
+      "req.functional" : 1
+    },
+    "produced" : {
+      "impact.report" : "v1",
+      "impact.summary" : "v1"
+    },
+    "files" : 1
+  }, {
+    "node" : "design_review",
+    "run" : 1,
+    "agent" : "reviewer",
+    "fallback" : false,
+    "consumed" : {
+      "impact.report" : 1,
+      "impact.summary" : 1,
+      "design.openapi" : 1,
+      "design.risks" : 1
+    },
+    "produced" : {
+      "review.design" : "v1"
+    },
+    "files" : 0
+  }, {
+    "node" : "impl_api_contract",
+    "run" : 1,
+    "agent" : "implementer",
+    "fallback" : false,
+    "consumed" : {
+      "impact.summary" : 1
+    },
+    "produced" : {
+      "code.api_contract" : "v1"
+    },
+    "files" : 4
+  }, {
+    "node" : "impl_persistence",
+    "run" : 1,
+    "agent" : "implementer",
+    "fallback" : false,
+    "consumed" : {
+      "impact.summary" : 1
+    },
+    "produced" : {
+      "code.persistence" : "v1"
+    },
+    "files" : 6
+  }, {
+    "node" : "impl_service_logic",
+    "run" : 1,
+    "agent" : "implementer",
+    "fallback" : false,
+    "consumed" : {
+      "code.persistence" : 1,
+      "code.api_contract" : 1
+    },
+    "produced" : {
+      "code.service" : "v1"
+    },
+    "files" : 3
+  }, {
+    "node" : "update_tests",
+    "run" : 1,
+    "agent" : "tester",
+    "fallback" : false,
+    "consumed" : {
+      "code.service" : 1
+    },
+    "produced" : {
+      "tests.updated" : "v1"
+    },
+    "files" : 4
+  }, {
+    "node" : "verify",
+    "run" : 1,
+    "agent" : "reviewer",
+    "fallback" : false,
+    "consumed" : {
+      "tests.updated" : 1
+    },
+    "produced" : {
+      "verify.report" : "v1"
+    },
+    "files" : 0
+  }, {
+    "node" : "docs",
+    "run" : 1,
+    "agent" : "documenter",
+    "fallback" : false,
+    "consumed" : {
+      "design.openapi" : 1,
+      "req.functional" : 1,
+      "verify.report" : 1
+    },
+    "produced" : {
+      "docs.readme" : "v1"
+    },
+    "files" : 2
+  }, {
+    "node" : "release_readiness",
+    "run" : 1,
+    "agent" : "release-manager",
+    "fallback" : false,
+    "consumed" : {
+      "verify.report" : 1,
+      "docs.readme" : 1
+    },
+    "produced" : {
+      "release.readiness" : "v1",
+      "release.report" : "v1"
+    },
+    "files" : 1
+  } ]
+}

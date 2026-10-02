@@ -1,0 +1,3 @@
+src/main/java/com/example/shortener/service/UrlValidator.java.tpl
+src/main/java/com/example/shortener/service/UrlService.java.tpl
+src/main/java/com/example/shortener/service/AnalyticsService.java.tpl

@@ -31,7 +31,7 @@ public final class Main {
         System.exit(new Main().execute(args));
     }
 
-    int execute(String[] args) throws Exception {
+    public int execute(String[] args) throws Exception {
         if (args.length == 0) return usage();
         Map<String, String> opts = parse(Arrays.copyOfRange(args, 1, args.length));
         switch (args[0]) {

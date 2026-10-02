@@ -161,7 +161,7 @@ public final class WorkflowEngine {
         boolean allDone = states.values().stream().allMatch(s -> s.status == NodeStatus.DONE);
         String status = allDone ? "COMPLETED" : "HALTED";
         String reason = allDone ? null : (safeStop.reason() == null ? "unsatisfied dependencies" : safeStop.reason());
-        metrics.finish(graph.nodes().size());
+        metrics.finish(graph.nodes().size(), (int) states.values().stream().filter(x -> x.status == NodeStatus.DONE).count());
         audit("RUN_FINISHED", "orchestrator", null, mapOf("status", status, "reason", reason));
         persist();
         RunReporter.write(cfg.runDir(), scenario, graph, states, metrics.snapshot(), context, lineage, decisions,
@@ -215,6 +215,7 @@ public final class WorkflowEngine {
             int budget = fb ? 1 : 1 + maxRetries;
             for (int a = 1; a <= budget; a++) {
                 if (a > 1) {
+                    if (totalAttempts.get() >= cfg.maxAttemptsTotal()) safeStop.trip("attempt budget exceeded");
                     if (safeStop.stopped()) {
                         abort(n, st);
                         return;
@@ -429,6 +430,7 @@ public final class WorkflowEngine {
         Replanner.Outcome o;
         synchronized (states) { o = replanner.replan(graph, changed, states, snapshots); }
         metrics.replan();
+        o.rolledBack().forEach(n -> metrics.rollback());
         audit("REPLAN", "orchestrator", null, mapOf("changedArtifacts", changed, "invalidated", o.invalidated(),
                 "rolledBack", o.rolledBack(), "retained", o.retained(), "cause", "upstream artifact change after " + ev.afterNode));
         decide("replan", null, "orchestrator", "invalidated " + o.invalidated() + ", retained " + o.retained());
