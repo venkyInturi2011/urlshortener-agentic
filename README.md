@@ -28,7 +28,7 @@ agents build (greenfield), evolve (brownfield) and adapt to a vague requirement 
 | Dynamic re-planning when upstream outputs change | `engine/Replanner` (data-flow invalidation + rollback) |
 | Greenfield / brownfield / ambiguous scenarios | `orchestrator/src/main/resources/scenarios/*.yaml`, [docs/SCENARIOS.md](docs/SCENARIOS.md) |
 
-Design in depth: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Honest accounting of risks and limits:
+API reference: [docs/API.md](docs/API.md) ([OpenAPI](docs/openapi.yaml)). Design in depth: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Honest accounting of risks and limits:
 [docs/RISKS.md](docs/RISKS.md). Final summary: [docs/ENGINEERING_SUMMARY.md](docs/ENGINEERING_SUMMARY.md).
 
 ## Setup

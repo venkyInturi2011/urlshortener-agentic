@@ -1,0 +1,285 @@
+openapi: 3.0.3
+info:
+  title: URL Shortener API
+  version: 1.2.0
+  description: |
+    Reference contract of the final generated service (the output of the greenfield, brownfield and ambiguous
+    scenarios, i.e. `workspace/demo/v3`). Verified against a running instance.
+
+    Version history of the contract (all changes after 1.0.0 are additive):
+    * 1.0.0 - create / get / stats / delete / redirect
+    * 1.1.0 - `expiresAt` on create and responses; `clicksByDay` in stats; reserved-alias and alias-collision fix
+    * 1.2.0 - destination scheme restricted to `https` (configurable at generation time); optional domain denylist;
+      in-process redirect cache (no contract change)
+
+    Errors use RFC 7807 `application/problem+json`.
+  license:
+    name: Internal prototype
+servers:
+  - url: http://localhost:8080
+    description: Local (`mvn spring-boot:run`)
+tags:
+  - name: Links
+    description: Create, inspect and delete short links
+  - name: Redirect
+    description: Public redirect endpoint
+  - name: Operations
+    description: Health
+paths:
+  /api/v1/urls:
+    post:
+      tags: [Links]
+      operationId: createShortUrl
+      summary: Create a short URL
+      description: |
+        Without `customAlias` a random 7-character base62 code is generated. If no `expiresAt` is given and a
+        non-expiring generated link for the same `longUrl` already exists, that link is returned with **200**
+        instead of creating a duplicate. A link with `expiresAt` is always created as a new link.
+
+        Rate limited per client address (default: burst 20, refill 1 token/s). Exceeding it returns **429**.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUrlRequest'
+            examples:
+              generated:
+                summary: Generated code
+                value: { longUrl: "https://example.com/docs" }
+              aliasWithExpiry:
+                summary: Custom alias with expiry
+                value: { longUrl: "https://example.com/docs", customAlias: "my-docs", expiresAt: "2031-01-01T00:00:00Z" }
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              description: Path of the new resource
+              schema: { type: string, example: /api/v1/urls/my-docs }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UrlResponse' }
+        '200':
+          description: An equivalent non-expiring generated link already existed; it is returned unchanged
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UrlResponse' }
+        '400':
+          description: |
+            Invalid request: blank/oversized/malformed `longUrl`, scheme not allowed, credentials in URL, internal /
+            private / link-local / obfuscated-IP host (SSRF guard), denylisted domain, invalid or reserved alias,
+            `expiresAt` not in the future or more than 5 years ahead, or malformed JSON.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                scheme:
+                  value: { type: "about:blank", title: "Invalid request", status: 400, detail: "only these URL schemes are allowed: [https]", instance: "/api/v1/urls" }
+        '409':
+          description: Alias already taken (comparison is case-insensitive)
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: A unique code could not be allocated after 5 attempts; retry
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+  /api/v1/urls/{code}:
+    parameters:
+      - $ref: '#/components/parameters/Code'
+    get:
+      tags: [Links]
+      operationId: getShortUrl
+      summary: Get link metadata
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UrlResponse' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/Gone'
+    delete:
+      tags: [Links]
+      operationId: deleteShortUrl
+      summary: Soft-delete a link
+      description: |
+        Requires the administrator key in `X-API-Key`. If the service was started without `SHORTENER_ADMIN_KEY`
+        (`shortener.admin-key`), deletion is disabled and every call returns 403. Authorisation is checked before the
+        code is looked up, so unauthenticated callers cannot probe for existence. Deleted links return 410; their
+        click history is kept and the code stays reserved.
+      security:
+        - AdminKey: []
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Missing, wrong or unconfigured key
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/urls/{code}/stats:
+    parameters:
+      - $ref: '#/components/parameters/Code'
+    get:
+      tags: [Links]
+      operationId: getStats
+      summary: Click statistics
+      description: |
+        `clicksByDay` buckets use the **server-local** calendar date (see limitations). Clicks are recorded on each
+        successful redirect; a failure to record never fails the redirect.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StatsResponse' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/Gone'
+  /{code}:
+    parameters:
+      - name: code
+        in: path
+        required: true
+        description: Short code (3-32 characters of letters, digits, `-`, `_`)
+        schema: { type: string, pattern: '^[A-Za-z0-9_-]{3,32}$' }
+    get:
+      tags: [Redirect]
+      operationId: redirect
+      summary: Redirect to the destination
+      description: |
+        Answers **302** (not 301, so browsers do not cache it and delete/expiry stay effective) with
+        `Cache-Control: no-store`. Records a click. With the redirect cache enabled, a cached link is served without a
+        database read; its own expiry is still enforced on every hit, and a delete on the same instance evicts it
+        (other instances may serve a deleted link for up to the cache TTL, default 60 s).
+      responses:
+        '302':
+          description: Found
+          headers:
+            Location:
+              description: Destination URL
+              schema: { type: string, format: uri }
+            Cache-Control:
+              schema: { type: string, example: no-store }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/Gone'
+  /actuator/health:
+    get:
+      tags: [Operations]
+      operationId: health
+      summary: Liveness / readiness
+      responses:
+        '200':
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: UP }
+components:
+  securitySchemes:
+    AdminKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Shared administrator key configured via `SHORTENER_ADMIN_KEY`
+  parameters:
+    Code:
+      name: code
+      in: path
+      required: true
+      description: Short code or custom alias
+      schema: { type: string, example: my-docs }
+  responses:
+    NotFound:
+      description: No link with this code
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example: { type: "about:blank", title: "Not found", status: 404, detail: "No short URL with code 'nope1234'", instance: "/api/v1/urls/nope1234" }
+    Gone:
+      description: The link was deleted or has expired
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example: { type: "about:blank", title: "Gone", status: 410, detail: "Short URL 'my-docs' was deleted or has expired", instance: "/my-docs" }
+    RateLimited:
+      description: Write rate limit exceeded for this client address
+      headers:
+        Retry-After:
+          description: Seconds until a token is available
+          schema: { type: integer, example: 1 }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example: { title: "Too Many Requests", status: 429, detail: "Rate limit exceeded" }
+  schemas:
+    CreateUrlRequest:
+      type: object
+      required: [longUrl]
+      properties:
+        longUrl:
+          type: string
+          maxLength: 2048
+          description: |
+            Destination. Must be an absolute `https` URL (1.2.0 default; `http` is rejected) with a public host. No
+            embedded credentials. Rejected: localhost, `*.local`, `*.internal`, single-label hosts, loopback / private /
+            link-local / CGNAT / multicast / unique-local addresses, IPv4-mapped IPv6, numeric or hex IP forms,
+            denylisted domains and their subdomains.
+          example: https://example.com/docs
+        customAlias:
+          type: string
+          minLength: 3
+          maxLength: 32
+          pattern: '^[A-Za-z0-9_-]{3,32}$'
+          description: |
+            Optional. Must not equal a reserved word (`api, actuator, health, healthz, admin, static, favicon, error,
+            docs`; compared case-insensitively) and must not differ from an existing code only by letter case.
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Optional. Must be in the future and at most 5 years ahead. After this instant the link returns 410.
+    UrlResponse:
+      type: object
+      required: [code, shortUrl, longUrl, createdAt]
+      properties:
+        code: { type: string, example: my-docs }
+        shortUrl: { type: string, format: uri, example: "http://localhost:8080/my-docs" }
+        longUrl: { type: string, format: uri }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time, nullable: true }
+    StatsResponse:
+      type: object
+      required: [code, totalClicks]
+      properties:
+        code: { type: string }
+        totalClicks: { type: integer, format: int64, minimum: 0 }
+        lastAccessedAt: { type: string, format: date-time, nullable: true }
+        clicksByDay:
+          type: object
+          description: ISO date (server-local) to number of clicks
+          additionalProperties: { type: integer, format: int64 }
+          example: { "2026-10-02": 2 }
+    Problem:
+      type: object
+      description: RFC 7807 problem details
+      properties:
+        type: { type: string, example: "about:blank" }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
