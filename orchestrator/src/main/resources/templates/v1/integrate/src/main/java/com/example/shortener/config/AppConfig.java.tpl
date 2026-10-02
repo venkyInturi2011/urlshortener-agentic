@@ -1,0 +1,24 @@
+package com.example.shortener.config;
+
+import com.example.shortener.ratelimit.TokenBucketLimiter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.time.Clock;
+
+@Configuration
+public class AppConfig {
+
+    @Bean
+    Clock clock() {
+        return Clock.systemUTC();
+    }
+
+    @Bean
+    TokenBucketLimiter tokenBucketLimiter(@Value("${shortener.ratelimit.capacity:20}") int capacity,
+                                          @Value("${shortener.ratelimit.refill-per-second:1.0}") double refillPerSecond,
+                                          Clock clock) {
+        return new TokenBucketLimiter(capacity, refillPerSecond, clock);
+    }
+}

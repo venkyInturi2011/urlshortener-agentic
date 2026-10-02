@@ -1,0 +1,5 @@
+pom.xml.tpl
+.gitignore.tpl
+src/main/resources/application.yml.tpl
+src/main/java/com/example/shortener/ShortenerApplication.java.tpl
+src/main/java/com/example/shortener/config/AppConfig.java.tpl

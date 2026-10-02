@@ -1,0 +1,82 @@
+---
+openapi: "3.0.3"
+info:
+  title: "URL Shortener"
+  version: "1.0.0"
+paths:
+  /api/v1/urls:
+    post:
+      summary: "Create a short URL"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - "longUrl"
+              type: "object"
+              properties:
+                longUrl:
+                  maxLength: 2048
+                  type: "string"
+                customAlias:
+                  pattern: "^[A-Za-z0-9_-]{3,32}$"
+                  type: "string"
+      responses:
+        "201":
+          description: "Created"
+        "200":
+          description: "Existing short URL returned"
+        "400":
+          description: "Invalid URL or alias"
+        "409":
+          description: "Alias already taken"
+        "429":
+          description: "Rate limit exceeded"
+  /api/v1/urls/{code}:
+    delete:
+      responses:
+        "204":
+          description: "Deleted"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Unknown"
+      summary: "Soft-delete (requires X-API-Key)"
+    get:
+      responses:
+        "200":
+          description: "OK"
+        "404":
+          description: "Unknown"
+        "410":
+          description: "Deleted or expired"
+      summary: "Get link metadata"
+  /api/v1/urls/{code}/stats:
+    get:
+      responses:
+        "404":
+          description: "Unknown"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  totalClicks:
+                    type: "integer"
+                  lastAccessedAt:
+                    type: "string"
+                    format: "date-time"
+                    nullable: true
+                type: "object"
+      summary: "Click statistics"
+  /{code}:
+    get:
+      responses:
+        "302":
+          description: "Redirect"
+        "404":
+          description: "Unknown"
+        "410":
+          description: "Deleted or expired"
+      summary: "Redirect"

@@ -1,0 +1,88 @@
+name: ambiguous
+description: Vague requirement ("safer and faster") handled with recorded assumptions, then re-planned when a stakeholder answers
+version: 1.2.0
+requirement: >
+  Make our short links safer and faster.
+approvals:
+  "*": approve
+# A stakeholder answers one clarification question after the first implementation pass.
+# In production this would arrive via a ticket/webhook; here it is scripted so the run is reproducible.
+events:
+  - afterNode: update_tests
+    type: clarification
+    answers:
+      AMB-1: "Safer means HTTPS only for new links, and keep the host denylist."
+nodes:
+  - id: requirements
+    agent: requirements
+    produces: [req.functional, req.security, req.performance, req.ambiguities]
+
+  - id: architecture
+    agent: architect
+    dependsOn: [requirements]
+    consumes: [req.functional, req.security, req.performance]
+    produces: [design.architecture, design.openapi]
+    exitGate: [structure, design-docs]
+
+  - id: risk_analysis
+    agent: risk
+    dependsOn: [requirements]
+    consumes: [req.functional, req.ambiguities]
+    produces: [design.risks]
+    exitGate: [structure]
+
+  - id: design_review
+    agent: reviewer
+    dependsOn: [architecture, risk_analysis]
+    consumes: [design.architecture, design.risks, req.ambiguities, req.security, req.performance]
+    produces: [review.design]
+    humanGate: true
+    gateReason: Approve the assumptions made for the ambiguous terms 'safer' and 'faster'
+
+  - id: impl_validator
+    agent: implementer
+    fallbackAgent: implementer.fallback
+    dependsOn: [design_review]
+    consumes: [req.security]
+    produces: [code.validator]
+    params: { changeset: v3/validator }
+    exitGate: [structure]
+
+  - id: impl_cache
+    agent: implementer
+    fallbackAgent: implementer.fallback
+    dependsOn: [design_review]
+    consumes: [req.performance]
+    produces: [code.cache]
+    params: { changeset: v3/cache }
+    exitGate: [structure]
+
+  - id: update_tests
+    agent: tester
+    dependsOn: [impl_validator, impl_cache]
+    consumes: [req.security, code.validator, code.cache]
+    produces: [tests.updated]
+    params: { changeset: v3/tests }
+    exitGate: [structure]
+
+  - id: verify
+    agent: reviewer
+    dependsOn: [update_tests]
+    consumes: [tests.updated]
+    produces: [verify.report]
+    exitGate: [maven-test]
+
+  - id: docs
+    agent: documenter
+    dependsOn: [verify]
+    consumes: [design.openapi, req.functional, verify.report]
+    produces: [docs.readme]
+    exitGate: [structure, docs-present]
+
+  - id: release_readiness
+    agent: release-manager
+    dependsOn: [docs]
+    consumes: [verify.report, docs.readme, req.ambiguities]
+    produces: [release.readiness, release.report]
+    humanGate: true
+    gateReason: Release approval - human owns the go/no-go decision

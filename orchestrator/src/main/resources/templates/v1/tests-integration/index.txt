@@ -1,0 +1,3 @@
+src/test/java/com/example/shortener/api/UrlApiIntegrationTest.java.tpl
+src/test/java/com/example/shortener/api/RateLimitIntegrationTest.java.tpl
+src/test/java/com/example/shortener/service/AliasRaceTest.java.tpl

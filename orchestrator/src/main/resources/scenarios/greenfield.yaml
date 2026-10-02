@@ -1,0 +1,110 @@
+name: greenfield
+description: Build the URL shortener from scratch (create, redirect, delete, analytics, aliases, rate limiting, URL safety)
+version: 1.0.0
+requirement: >
+  Build a URL shortener service. Users create short URLs from long URLs (with optional custom aliases),
+  anyone can redirect via the short code, links can be deleted by an administrator, and click analytics
+  are available per link. The service must be reliable: apply rate limiting on write APIs and validate
+  destination URLs for safety (SSRF).
+approvals:
+  "*": approve
+nodes:
+  - id: requirements
+    agent: requirements
+    produces: [req.functional, req.security, req.performance, req.ambiguities]
+
+  - id: architecture
+    agent: architect
+    dependsOn: [requirements]
+    consumes: [req.functional, req.security, req.performance]
+    produces: [design.architecture, design.openapi]
+    exitGate: [structure, design-docs]
+
+  - id: risk_analysis
+    agent: risk
+    dependsOn: [requirements]
+    consumes: [req.functional, req.ambiguities]
+    produces: [design.risks]
+    exitGate: [structure]
+
+  - id: design_review
+    agent: reviewer
+    dependsOn: [architecture, risk_analysis]
+    consumes: [design.architecture, design.openapi, design.risks, req.ambiguities]
+    produces: [review.design]
+    humanGate: true
+    gateReason: Approve architecture, API contract and risk register before implementation starts
+
+  - id: impl_storage
+    agent: implementer
+    fallbackAgent: implementer.fallback
+    dependsOn: [design_review]
+    consumes: [design.openapi]
+    produces: [code.storage]
+    params: { changeset: v1/storage }
+    exitGate: [structure]
+
+  - id: impl_api
+    agent: implementer
+    fallbackAgent: implementer.fallback
+    dependsOn: [design_review]
+    consumes: [design.openapi]
+    produces: [code.api]
+    params: { changeset: v1/api }
+    exitGate: [structure]
+
+  - id: impl_analytics
+    agent: implementer
+    fallbackAgent: implementer.fallback
+    dependsOn: [design_review]
+    consumes: [design.openapi]
+    produces: [code.analytics]
+    params: { changeset: v1/analytics }
+    exitGate: [structure]
+
+  - id: integrate
+    agent: implementer
+    fallbackAgent: implementer.fallback
+    dependsOn: [impl_storage, impl_api, impl_analytics]
+    consumes: [code.storage, code.api, code.analytics]
+    produces: [code.integrate]
+    params: { changeset: v1/integrate }
+    exitGate: [structure, maven-compile]
+
+  - id: write_unit_tests
+    agent: tester
+    dependsOn: [integrate]
+    consumes: [code.integrate]
+    produces: [tests.unit]
+    params: { changeset: v1/tests-unit }
+    exitGate: [structure]
+
+  - id: write_integration_tests
+    agent: tester
+    dependsOn: [integrate]
+    consumes: [code.integrate]
+    produces: [tests.integration]
+    params: { changeset: v1/tests-integration }
+    exitGate: [structure]
+
+  - id: verify
+    agent: reviewer
+    dependsOn: [write_unit_tests, write_integration_tests]
+    consumes: [tests.unit, tests.integration]
+    produces: [verify.report]
+    exitGate: [maven-test]
+
+  - id: docs
+    agent: documenter
+    dependsOn: [verify]
+    consumes: [design.openapi, req.functional, verify.report]
+    produces: [docs.readme]
+    exitGate: [structure, docs-present]
+
+  - id: release_readiness
+    agent: release-manager
+    dependsOn: [docs]
+    consumes: [verify.report, docs.readme]
+    produces: [release.readiness, release.report]
+    humanGate: true
+    gateReason: Release approval - human owns the go/no-go decision

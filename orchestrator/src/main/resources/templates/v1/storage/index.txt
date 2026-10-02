@@ -1,0 +1,6 @@
+src/main/resources/schema.sql.tpl
+src/main/java/com/example/shortener/domain/ShortUrl.java.tpl
+src/main/java/com/example/shortener/repo/UrlRepository.java.tpl
+src/main/java/com/example/shortener/repo/JdbcUrlRepository.java.tpl
+src/main/java/com/example/shortener/repo/ClickRepository.java.tpl
+src/main/java/com/example/shortener/repo/JdbcClickRepository.java.tpl

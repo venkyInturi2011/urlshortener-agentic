@@ -1,0 +1,149 @@
+package com.example.shortener.service;
+
+import com.example.shortener.domain.ShortUrl;
+import com.example.shortener.error.ShortenerException;
+import com.example.shortener.repo.UrlRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class UrlServiceTest {
+
+    private static final String URL = "https://example.com/page";
+    private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
+
+    @Mock UrlRepository repo;
+    @Mock CodeGenerator generator;
+
+    private UrlService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new UrlService(repo, new UrlValidator(), generator, Clock.fixed(NOW, ZoneOffset.UTC));
+    }
+
+    private static int status(Throwable t) {
+        return ((ShortenerException) t).status();
+    }
+
+    @Test
+    void createsNewShortUrl() {
+        when(repo.findGeneratedByLongUrl(URL)).thenReturn(Optional.empty());
+        when(generator.next()).thenReturn("abc1234");
+        when(repo.insert(any())).thenReturn(true);
+
+        UrlService.CreateResult r = service.create(URL, null);
+
+        assertThat(r.created()).isTrue();
+        assertThat(r.url().code()).isEqualTo("abc1234");
+        assertThat(r.url().createdAt()).isEqualTo(NOW);
+        assertThat(r.url().customAlias()).isFalse();
+    }
+
+    @Test
+    void sameLongUrlReturnsExistingLink() {
+        ShortUrl existing = new ShortUrl("exist01", URL, false, NOW, false);
+        when(repo.findGeneratedByLongUrl(URL)).thenReturn(Optional.of(existing));
+
+        UrlService.CreateResult r = service.create(URL, "  ");
+
+        assertThat(r.created()).isFalse();
+        assertThat(r.url()).isEqualTo(existing);
+        verify(repo, never()).insert(any());
+    }
+
+    @Test
+    void retriesOnCodeCollision() {
+        when(repo.findGeneratedByLongUrl(URL)).thenReturn(Optional.empty());
+        when(generator.next()).thenReturn("aaaaaaa", "bbbbbbb");
+        when(repo.insert(any())).thenReturn(false, true);
+
+        assertThat(service.create(URL, null).url().code()).isEqualTo("bbbbbbb");
+        verify(generator, times(2)).next();
+    }
+
+    @Test
+    void failsClosedAfterMaxAttempts() {
+        when(repo.findGeneratedByLongUrl(URL)).thenReturn(Optional.empty());
+        when(generator.next()).thenReturn("aaaaaaa");
+        when(repo.insert(any())).thenReturn(false);
+
+        assertThatThrownBy(() -> service.create(URL, null)).isInstanceOf(ShortenerException.class)
+                .satisfies(e -> assertThat(status(e)).isEqualTo(503));
+        verify(generator, times(UrlService.MAX_ATTEMPTS)).next();
+    }
+
+    @Test
+    void customAliasIsStored() {
+        when(repo.insert(any())).thenReturn(true);
+
+        UrlService.CreateResult r = service.create(URL, "my-link");
+
+        assertThat(r.url().code()).isEqualTo("my-link");
+        assertThat(r.url().customAlias()).isTrue();
+    }
+
+    @Test
+    void takenAliasIsConflict() {
+        when(repo.insert(any())).thenReturn(false);
+
+        assertThatThrownBy(() -> service.create(URL, "my-link")).isInstanceOf(ShortenerException.class)
+                .satisfies(e -> assertThat(status(e)).isEqualTo(409));
+    }
+
+    @Test
+    void invalidUrlNeverReachesRepository() {
+        assertThatThrownBy(() -> service.create("ftp://example.com", null)).isInstanceOf(ShortenerException.class);
+        verify(repo, never()).insert(any());
+    }
+
+    @Test
+    void resolveUnknownIsNotFound() {
+        when(repo.findByCode("nope123")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.resolve("nope123")).isInstanceOf(ShortenerException.class)
+                .satisfies(e -> assertThat(status(e)).isEqualTo(404));
+    }
+
+    @Test
+    void resolveDeletedIsGone() {
+        when(repo.findByCode("gone123")).thenReturn(Optional.of(new ShortUrl("gone123", URL, false, NOW, true)));
+
+        assertThatThrownBy(() -> service.resolve("gone123")).isInstanceOf(ShortenerException.class)
+                .satisfies(e -> assertThat(status(e)).isEqualTo(410));
+    }
+
+    @Test
+    void deleteMarksLinkDeleted() {
+        when(repo.findByCode("abc1234")).thenReturn(Optional.of(new ShortUrl("abc1234", URL, false, NOW, false)));
+
+        service.delete("abc1234");
+
+        verify(repo).softDelete("abc1234");
+    }
+
+    @Test
+    void deleteUnknownIsNotFound() {
+        when(repo.findByCode("nope123")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.delete("nope123")).isInstanceOf(ShortenerException.class)
+                .satisfies(e -> assertThat(status(e)).isEqualTo(404));
+        verify(repo, never()).softDelete(any());
+    }
+}

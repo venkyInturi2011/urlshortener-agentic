@@ -1,0 +1,12 @@
+src/main/java/com/example/shortener/error/ShortenerException.java.tpl
+src/main/java/com/example/shortener/error/ApiExceptionHandler.java.tpl
+src/main/java/com/example/shortener/dto/CreateUrlRequest.java.tpl
+src/main/java/com/example/shortener/dto/UrlResponse.java.tpl
+src/main/java/com/example/shortener/dto/StatsResponse.java.tpl
+src/main/java/com/example/shortener/service/CodeGenerator.java.tpl
+src/main/java/com/example/shortener/service/UrlValidator.java.tpl
+src/main/java/com/example/shortener/service/UrlService.java.tpl
+src/main/java/com/example/shortener/api/UrlController.java.tpl
+src/main/java/com/example/shortener/api/RedirectController.java.tpl
+src/main/java/com/example/shortener/ratelimit/TokenBucketLimiter.java.tpl
+src/main/java/com/example/shortener/ratelimit/RateLimitFilter.java.tpl

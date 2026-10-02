@@ -1,0 +1,99 @@
+name: brownfield
+description: Add link expiry and per-day click analytics; fix the custom-alias case-sensitivity bug on the existing service
+version: 1.1.0
+requirement: >
+  Add link expiry (optional expiresAt on create, redirect returns 410 after expiry) and per-day click
+  analytics on the stats endpoint. Fix bug: the reserved-word check for custom aliases can be bypassed by
+  changing the case, and aliases that differ only by case are accepted.
+approvals:
+  "*": approve
+nodes:
+  - id: requirements
+    agent: requirements
+    produces: [req.functional, req.security, req.performance, req.ambiguities]
+
+  - id: impact_analysis
+    agent: impact-analyst
+    dependsOn: [requirements]
+    consumes: [req.functional]
+    produces: [impact.report, impact.summary]
+    exitGate: [structure]
+
+  - id: architecture
+    agent: architect
+    dependsOn: [requirements]
+    consumes: [req.functional, req.security, req.performance]
+    produces: [design.architecture, design.openapi]
+    exitGate: [structure, design-docs]
+
+  - id: risk_analysis
+    agent: risk
+    dependsOn: [requirements]
+    consumes: [req.functional, req.ambiguities]
+    produces: [design.risks]
+    exitGate: [structure]
+
+  - id: design_review
+    agent: reviewer
+    dependsOn: [impact_analysis, architecture, risk_analysis]
+    consumes: [impact.report, impact.summary, design.openapi, design.risks]
+    produces: [review.design]
+    humanGate: true
+    gateReason: Approve additive API contract change (expiresAt, clicksByDay) and schema migration
+
+  - id: impl_persistence
+    agent: implementer
+    fallbackAgent: implementer.fallback
+    dependsOn: [design_review]
+    consumes: [impact.summary]
+    produces: [code.persistence]
+    params: { changeset: v2/persistence }
+    exitGate: [structure]
+
+  - id: impl_api_contract
+    agent: implementer
+    fallbackAgent: implementer.fallback
+    dependsOn: [design_review]
+    consumes: [impact.summary]
+    produces: [code.api_contract]
+    params: { changeset: v2/api-contract }
+    exitGate: [structure]
+
+  - id: impl_service_logic
+    agent: implementer
+    fallbackAgent: implementer.fallback
+    dependsOn: [impl_persistence, impl_api_contract]
+    consumes: [code.persistence, code.api_contract]
+    produces: [code.service]
+    params: { changeset: v2/service-logic }
+    exitGate: [structure, maven-compile]
+
+  - id: update_tests
+    agent: tester
+    dependsOn: [impl_service_logic]
+    consumes: [code.service]
+    produces: [tests.updated]
+    params: { changeset: v2/tests }
+    exitGate: [structure]
+
+  - id: verify
+    agent: reviewer
+    dependsOn: [update_tests]
+    consumes: [tests.updated]
+    produces: [verify.report]
+    exitGate: [maven-test]
+
+  - id: docs
+    agent: documenter
+    dependsOn: [verify]
+    consumes: [design.openapi, req.functional, verify.report]
+    produces: [docs.readme]
+    exitGate: [structure, docs-present]
+
+  - id: release_readiness
+    agent: release-manager
+    dependsOn: [docs]
+    consumes: [verify.report, docs.readme]
+    produces: [release.readiness, release.report]
+    humanGate: true
+    gateReason: Release approval - human owns the go/no-go decision

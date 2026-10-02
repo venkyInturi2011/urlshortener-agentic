@@ -1,0 +1,6 @@
+target/
+workspace/
+data/
+*.iml
+.idea/
+.vscode/

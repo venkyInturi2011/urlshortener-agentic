@@ -1,0 +1,4 @@
+src/test/java/com/example/shortener/service/UrlValidatorTest.java.tpl
+src/test/java/com/example/shortener/service/UrlServiceTest.java.tpl
+src/test/java/com/example/shortener/service/CodeGeneratorTest.java.tpl
+src/test/java/com/example/shortener/ratelimit/TokenBucketLimiterTest.java.tpl

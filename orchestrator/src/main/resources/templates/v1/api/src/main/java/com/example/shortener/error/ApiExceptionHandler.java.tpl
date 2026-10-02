@@ -1,0 +1,18 @@
+package com.example.shortener.error;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+/** Maps domain errors to RFC 7807 problem responses. Standard MVC errors use Spring's problem-details support. */
+@RestControllerAdvice
+public class ApiExceptionHandler {
+
+    @ExceptionHandler(ShortenerException.class)
+    public ProblemDetail handle(ShortenerException e) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.valueOf(e.status()), e.getMessage());
+        pd.setTitle(e.title());
+        return pd;
+    }
+}
